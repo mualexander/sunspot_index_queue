@@ -11,16 +11,16 @@ module Sunspot
       #   Sunspot::IndexQueue::Entry::MongoImpl.connection = 'localhost'
       #   Sunspot::IndexQueue::Entry::MongoImpl.database_name = 'my_database'
       #   # or
-      #   Sunspot::IndexQueue::Entry::MongoImpl.connection = Mongo::Connection.new('localhost', 27017)
+      #   Sunspot::IndexQueue::Entry::MongoImpl.connection = ::Mongo::Connection.new('localhost', 27017)
       #   Sunspot::IndexQueue::Entry::MongoImpl.database_name = 'my_database'
       class MongoImpl
         include Entry
 
         class << self
-          # Set the connection to MongoDB. The args can either be a Mongo::Connection object, or the args
-          # that can be used to create a new Mongo::Connection.
+          # Set the connection to MongoDB. The args can either be a ::Mongo::Connection object, or the args
+          # that can be used to create a new ::Mongo::Connection.
           def connection=(*args)
-            @connection = args.first.is_a?(Mongo::Connection) ? args.first : Mongo::Connection.new(*args)
+            @connection = args.first.is_a?(::Mongo::Connection) ? args.first : ::Mongo::Connection.new(*args)
           end
 
           # Get the connection currently in use.
@@ -38,8 +38,8 @@ module Sunspot
           def collection
             unless @collection
               @collection = connection.db(@database_name)["sunspot_index_queue_entries"]
-              @collection.create_index([[:record_class_name, Mongo::ASCENDING], [:record_id, Mongo::ASCENDING]])
-              @collection.create_index([[:run_at, Mongo::ASCENDING], [:record_class_name, Mongo::ASCENDING], [:priority, Mongo::DESCENDING]])
+              @collection.create_index([[:record_class_name, ::Mongo::ASCENDING], [:record_id, ::Mongo::ASCENDING]])
+              @collection.create_index([[:run_at, ::Mongo::ASCENDING], [:record_class_name, ::Mongo::ASCENDING], [:priority, ::Mongo::DESCENDING]])
             end
             @collection
           end
@@ -121,10 +121,10 @@ module Sunspot
             while entries.size < queue.batch_size
               begin
                 lock = rand(0x7FFFFFFF)
-                doc = collection.find_and_modify(:update => {"$set" => {:run_at => Time.now.utc + queue.retry_interval, :error => nil, :lock => lock}}, :query => conditions, :limit => queue.batch_size, :sort => [[:priority, Mongo::DESCENDING], [:run_at, Mongo::ASCENDING]])
+                doc = collection.find_and_modify(:update => {"$set" => {:run_at => Time.now.utc + queue.retry_interval, :error => nil, :lock => lock}}, :query => conditions, :limit => queue.batch_size, :sort => [[:priority, ::Mongo::DESCENDING], [:run_at, ::Mongo::ASCENDING]])
                 break unless doc
                 entries << new(doc)
-              rescue Mongo::OperationFailure
+              rescue ::Mongo::OperationFailure
                 break
               end
             end
